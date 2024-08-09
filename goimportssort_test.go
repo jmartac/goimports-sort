@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProcessFile(t *testing.T) {
@@ -48,14 +49,14 @@ import (
 	"log"
 	"net/http/httptest"
 
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+
 	APA "bitbucket.org/example/package/name"
 	APZ "bitbucket.org/example/package/name"
 	"bitbucket.org/example/package/name2"
 	"bitbucket.org/example/package/name3"
 	"bitbucket.org/example/package/name4"
-
-	"github.com/AanZee/goimportssort/package1"
-	"github.com/AanZee/goimportssort/package2"
 )
 
 func main() {
@@ -149,14 +150,14 @@ import (
 	"log"
 	"net/http/httptest"
 
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+
 	APA "bitbucket.org/example/package/name"
 	APZ "bitbucket.org/example/package/name"
 	"bitbucket.org/example/package/name2"
 	"bitbucket.org/example/package/name3"
 	"bitbucket.org/example/package/name4"
-
-	"github.com/AanZee/goimportssort/package1"
-	"github.com/AanZee/goimportssort/package2"
 )
 `, string(output))
 }
@@ -195,4 +196,208 @@ func TestGetModuleName(t *testing.T) {
 	name := getModuleName()
 
 	asserts.Equal("github.com/AanZee/goimportssort", name)
+}
+
+func TestProcessFile_CustomOrders(t *testing.T) {
+	asserts := assert.New(t)
+	*localPrefix = "github.com/AanZee/goimportssort"
+	*order = "std,external,local"
+
+	reader := strings.NewReader(`package main
+
+import (
+	"fmt"
+	"log"
+	APZ "bitbucket.org/example/package/name"
+	APA "bitbucket.org/example/package/name"
+	"github.com/AanZee/goimportssort/package2"
+	"github.com/AanZee/goimportssort/package1"
+)
+import (
+	"net/http/httptest"
+)
+
+import "bitbucket.org/example/package/name2"
+import "bitbucket.org/example/package/name3"
+import "bitbucket.org/example/package/name4"`)
+	output, err := processFile("", reader, os.Stdout)
+	asserts.NotEqual(nil, output)
+	asserts.Equal(nil, err)
+	asserts.Equal(`package main
+
+import (
+	"fmt"
+	"log"
+	"net/http/httptest"
+
+	APA "bitbucket.org/example/package/name"
+	APZ "bitbucket.org/example/package/name"
+	"bitbucket.org/example/package/name2"
+	"bitbucket.org/example/package/name3"
+	"bitbucket.org/example/package/name4"
+
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+)
+`, string(output), "tested order is: std,external,local")
+
+	// --------------------------------------------------------------------------------------
+	*order = "external,std,local"
+	reader = strings.NewReader(`package main
+
+	import (
+		"fmt"
+		"log"
+		APZ "bitbucket.org/example/package/name"
+		APA "bitbucket.org/example/package/name"
+		"github.com/AanZee/goimportssort/package2"
+		"github.com/AanZee/goimportssort/package1"
+	)
+	import (
+		"net/http/httptest"
+	)
+	
+	import "bitbucket.org/example/package/name2"
+	import "bitbucket.org/example/package/name3"
+	import "bitbucket.org/example/package/name4"`)
+	output, err = processFile("", reader, os.Stdout)
+	asserts.NotEqual(nil, output)
+	asserts.Equal(nil, err)
+	asserts.Equal(`package main
+
+import (
+	APA "bitbucket.org/example/package/name"
+	APZ "bitbucket.org/example/package/name"
+	"bitbucket.org/example/package/name2"
+	"bitbucket.org/example/package/name3"
+	"bitbucket.org/example/package/name4"
+
+	"fmt"
+	"log"
+	"net/http/httptest"
+
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+)
+`, string(output), "tested order is: external,std,local")
+
+	// --------------------------------------------------------------------------------------
+	*order = "external,local,std"
+	reader = strings.NewReader(`package main
+
+	import (
+		"fmt"
+		"log"
+		APZ "bitbucket.org/example/package/name"
+		APA "bitbucket.org/example/package/name"
+		"github.com/AanZee/goimportssort/package2"
+		"github.com/AanZee/goimportssort/package1"
+	)
+	import (
+		"net/http/httptest"
+	)
+	
+	import "bitbucket.org/example/package/name2"
+	import "bitbucket.org/example/package/name3"
+	import "bitbucket.org/example/package/name4"`)
+	output, err = processFile("", reader, os.Stdout)
+	asserts.NotEqual(nil, output)
+	asserts.Equal(nil, err)
+	asserts.Equal(`package main
+
+import (
+	APA "bitbucket.org/example/package/name"
+	APZ "bitbucket.org/example/package/name"
+	"bitbucket.org/example/package/name2"
+	"bitbucket.org/example/package/name3"
+	"bitbucket.org/example/package/name4"
+
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+
+	"fmt"
+	"log"
+	"net/http/httptest"
+)
+`, string(output), "tested order is: external,local,std")
+
+	// --------------------------------------------------------------------------------------
+	*order = "local,std,external"
+	reader = strings.NewReader(`package main
+
+	import (
+		"fmt"
+		"log"
+		APZ "bitbucket.org/example/package/name"
+		APA "bitbucket.org/example/package/name"
+		"github.com/AanZee/goimportssort/package2"
+		"github.com/AanZee/goimportssort/package1"
+	)
+	import (
+		"net/http/httptest"
+	)
+	
+	import "bitbucket.org/example/package/name2"
+	import "bitbucket.org/example/package/name3"
+	import "bitbucket.org/example/package/name4"`)
+	output, err = processFile("", reader, os.Stdout)
+	asserts.NotEqual(nil, output)
+	asserts.Equal(nil, err)
+	asserts.Equal(`package main
+
+import (
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+
+	"fmt"
+	"log"
+	"net/http/httptest"
+
+	APA "bitbucket.org/example/package/name"
+	APZ "bitbucket.org/example/package/name"
+	"bitbucket.org/example/package/name2"
+	"bitbucket.org/example/package/name3"
+	"bitbucket.org/example/package/name4"
+)
+`, string(output), "tested order is: local,std,external")
+
+	// --------------------------------------------------------------------------------------
+	*order = "local,external,std"
+	reader = strings.NewReader(`package main
+
+	import (
+		"fmt"
+		"log"
+		APZ "bitbucket.org/example/package/name"
+		APA "bitbucket.org/example/package/name"
+		"github.com/AanZee/goimportssort/package2"
+		"github.com/AanZee/goimportssort/package1"
+	)
+	import (
+		"net/http/httptest"
+	)
+	
+	import "bitbucket.org/example/package/name2"
+	import "bitbucket.org/example/package/name3"
+	import "bitbucket.org/example/package/name4"`)
+	output, err = processFile("", reader, os.Stdout)
+	asserts.NotEqual(nil, output)
+	asserts.Equal(nil, err)
+	asserts.Equal(`package main
+
+import (
+	"github.com/AanZee/goimportssort/package1"
+	"github.com/AanZee/goimportssort/package2"
+
+	APA "bitbucket.org/example/package/name"
+	APZ "bitbucket.org/example/package/name"
+	"bitbucket.org/example/package/name2"
+	"bitbucket.org/example/package/name3"
+	"bitbucket.org/example/package/name4"
+
+	"fmt"
+	"log"
+	"net/http/httptest"
+)
+`, string(output), "tested order is: local,external,std")
 }

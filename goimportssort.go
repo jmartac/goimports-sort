@@ -1,7 +1,3 @@
-/*
-goimportssort sorts your Go import lines in three categories: inbuilt, external and local.
-     $ go get -u github.com/AanZee/goimportssort
-*/
 package main
 
 import (
@@ -28,9 +24,16 @@ import (
 	"github.com/dave/dst/dstutil"
 )
 
+const (
+	_std      = "std"
+	_local    = "local"
+	_external = "external"
+)
+
 var (
 	list             = flag.Bool("l", false, "write results to stdout")
 	write            = flag.Bool("w", false, "write result to (source) file instead of stdout")
+	order            = flag.String("o", "std,local,external", "preferred import ordering; default is std,local,external")
 	localPrefix      = flag.String("local", "", "put imports beginning with this string after 3rd-party packages; comma-separated list")
 	verbose          bool // verbose logging
 	standardPackages = make(map[string]struct{})
@@ -191,6 +194,12 @@ func process(src []byte) (output []byte, err error) {
 		node             *dst.File
 	)
 
+	if order != nil && *order != "" {
+		if err := loadCustomOrder(*order); err != nil {
+			return nil, err
+		}
+	}
+
 	err = loadStandardPackages()
 	if err == nil {
 		node, err = decorator.ParseFile(fileSet, "", src, parser.ParseComments)
@@ -301,16 +310,51 @@ func convertImportsToSlice(node *dst.File) ([][]impModel, error) {
 		}
 		locImpModel.path = impName
 
-		if *localPrefix != "" && strings.Count(impName, *localPrefix) > 0 {
-			importCategories[2] = append(importCategories[2], locImpModel)
-		} else if isStandardPackage(impNameWithoutQuotes) {
-			importCategories[0] = append(importCategories[0], locImpModel)
-		} else {
-			importCategories[1] = append(importCategories[1], locImpModel)
+		if isStandardPackage(impNameWithoutQuotes) {
+			importCategories[categories[_std]] = append(importCategories[categories[_std]], locImpModel)
+			continue
 		}
+		if *localPrefix != "" && strings.Count(impName, *localPrefix) > 0 {
+			importCategories[categories[_local]] = append(importCategories[categories[_local]], locImpModel)
+			continue
+		}
+		importCategories[categories[_external]] = append(importCategories[categories[_external]], locImpModel)
 	}
 
 	return importCategories, nil
+}
+
+var categories = map[string]int{
+	_std:      0,
+	_local:    2,
+	_external: 1,
+}
+
+// loadCustomOrder receives a custom order string and tries to load it into categories map.
+// It returns an error if the custom order is invalid.
+// The custom order should be a comma-separated list of the following strings:
+// std, external, local
+// Example: "std,local,external"
+func loadCustomOrder(customOrder string) error {
+	orderList := strings.Split(customOrder, ",")
+	if len(orderList) != 3 {
+		return errors.New(`order should have 3 values separated by commas (i.e.: "std,local,external")`)
+	}
+
+	for i, cat := range orderList {
+		switch cat {
+		case _std:
+			categories[_std] = i
+		case _local:
+			categories[_local] = i
+		case _external:
+			categories[_external] = i
+		default:
+			return errors.New("invalid order value: " + cat)
+		}
+	}
+
+	return nil
 }
 
 // loadStandardPackages tries to fetch all golang std packages
