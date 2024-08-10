@@ -5,8 +5,21 @@ This is a fork of [AanZee/goimportssort](https://github.com/jmartac/goimports-so
 ## Changes
 
 -  Added a new flag `-o` to specify the desired order of the imports blocks (default is `std,local,external`, being those the only valid values).
+-  Upgraded the Go version to 1.22.
 
-Usage:
+## Installation
+
+```bash
+$ go get -u github.com/jmartac/goimportssort
+```
+
+or build it from source:
+
+```bash
+$ go build -o goimportssort
+```
+
+### Usage
 
 ```bash
 $ goimportssort -w -o std,external,local ./...

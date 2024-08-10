@@ -195,7 +195,7 @@ func TestGetModuleName(t *testing.T) {
 
 	name := getModuleName()
 
-	asserts.Equal("github.com/AanZee/goimportssort", name)
+	asserts.Equal("github.com/jmartac/goimportssort", name)
 }
 
 func TestProcessFile_CustomOrders(t *testing.T) {

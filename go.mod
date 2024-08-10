@@ -1,10 +1,17 @@
-module github.com/AanZee/goimportssort
+module github.com/jmartac/goimportssort
 
-go 1.14
+go 1.22
 
 require (
-	github.com/dave/dst v0.23.1
-	github.com/stretchr/testify v1.5.1
-	golang.org/x/mod v0.2.0
-	golang.org/x/tools v0.0.0-20200326210457-5d86d385bf88
+	github.com/dave/dst v0.27.3
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/mod v0.20.0
+	golang.org/x/tools v0.24.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
