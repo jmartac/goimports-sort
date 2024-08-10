@@ -10,7 +10,7 @@ This is a fork of [AanZee/goimportssort](https://github.com/jmartac/goimports-so
 ## Installation
 
 ```bash
-$ go get -u github.com/jmartac/goimportssort
+$ go install github.com/jmartac/goimportssort
 ```
 
 or build it from source:
